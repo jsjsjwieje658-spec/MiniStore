@@ -2,7 +2,8 @@
 //  MiniStore+Sources.swift
 //  SideStore
 //
-//  Seeds Mini's Repo as the catalogue source and clears out SideStore's.
+//  Clears dead sources (including the old Mini's Repo URL, which 404s) and
+//  seeds a catalogue only when `catalogueSourceURL` is a live feed.
 //
 
 import CoreData
@@ -14,7 +15,10 @@ public extension MiniStore
     ///
     /// Deliberately separate from `Source.altStoreSourceURL`, which is this app's own update
     /// feed and carries no third-party apps.
-    static let catalogueSourceURL = URL(string: "https://OofMini.github.io/Minis-Repo/mini.json")!
+    /// Previously `https://OofMini.github.io/Minis-Repo/mini.json`. That GitHub Pages site 404s
+    /// and the HTML body is what launch logged as "The given data was not valid JSON", which
+    /// failed the whole source refresh. Do not seed it again until a live catalogue exists.
+    static let catalogueSourceURL: URL? = nil
     static let catalogueSourceName = "Mini's Repo"
 
     /// Feeds an upgrading install may still have in its database, matched against the
@@ -46,6 +50,9 @@ public extension MiniStore
         // the feed's own `name` — sitting in Sources reporting "failed to load", while
         // self-updates went on working from the current feed's separate row.
         "the-big-mini.github.io/sidestore/",
+        // Dead catalogue. Fetching it returns GitHub Pages HTML, which fails JSON decode
+        // for the entire source refresh (console: "Data corrupted. The given data was not valid JSON.").
+        "oofmini.github.io/minis-repo/",
     ]
 
     /// Set once Mini's Repo has been seeded, so removing it sticks. An existence check
@@ -105,9 +112,10 @@ extension Source
 
     static func seedCatalogueSourceIfNeeded(in context: NSManagedObjectContext)
     {
+        guard let catalogueSourceURL = MiniStore.catalogueSourceURL else { return }
         guard !UserDefaults.standard.bool(forKey: MiniStore.didSeedCatalogueKey) else { return }
 
-        guard let identifier = self.sourceID(for: MiniStore.catalogueSourceURL) else { return }
+        guard let identifier = self.sourceID(for: catalogueSourceURL) else { return }
 
         let predicate = NSPredicate(format: "%K == %@", #keyPath(Source.identifier), identifier)
         if Source.first(satisfying: predicate, in: context) == nil
@@ -116,7 +124,7 @@ extension Source
             // walks every Source row, so this one gets populated with the rest.
             _ = Source.make(name: MiniStore.catalogueSourceName,
                             groupID: Source.altStoreGroupIdentifier,
-                            sourceURL: MiniStore.catalogueSourceURL,
+                            sourceURL: catalogueSourceURL,
                             context: context)
         }
 

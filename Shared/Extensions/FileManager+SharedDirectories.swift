@@ -14,12 +14,15 @@ public extension FileManager
         #if os(tvOS)
         return self.cachesDirectory
         #else
-        guard let appGroup = Bundle.main.altstoreAppGroup else {
-            return nil
+        let candidates = Bundle.main.altstoreAppGroupCandidates
+        guard !candidates.isEmpty else { return nil }
+
+        for appGroup in candidates {
+            if let sharedDirectoryURL = self.containerURL(forSecurityApplicationGroupIdentifier: appGroup) {
+                return sharedDirectoryURL
+            }
         }
-        
-        let sharedDirectoryURL = self.containerURL(forSecurityApplicationGroupIdentifier: appGroup)
-        return sharedDirectoryURL
+        return nil
         #endif
     }
     

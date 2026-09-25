@@ -18,18 +18,32 @@ public final class MaintenanceManager {
 
     public static let maintenanceCounterFileName = ".maintenance_counter"
 
+    private static let defaultsCounterKey = "MaintenanceManager.completedCounter"
+
     private var maintenanceCounterFileURL: URL? {
         FileManager.default.altstoreSharedDirectory?.appendingPathComponent(Self.maintenanceCounterFileName)
     }
 
+    /// Highest recorded pass. The file lives in the app-group container, which the sign-in
+    /// crash log showed as unavailable (`containerURL` nil, host bundle ID stamped with
+    /// `.AltWidget`). Reading only that file made `completedCounter` stay 0, so pass 1 —
+    /// `Keychain.clearAll()` plus `signOut` — ran on every launch and wiped the Apple ID
+    /// the user had just entered. UserDefaults is in the app sandbox and is always writable.
     private var completedCounter: Int {
         get {
-            guard let url = maintenanceCounterFileURL,
-                  let str = try? String(contentsOf: url, encoding: .utf8),
-                  let val = Int(str.trimmingCharacters(in: .whitespacesAndNewlines)) else { return 0 }
-            return val
+            let fileValue: Int
+            if let url = maintenanceCounterFileURL,
+               let str = try? String(contentsOf: url, encoding: .utf8),
+               let val = Int(str.trimmingCharacters(in: .whitespacesAndNewlines)) {
+                fileValue = val
+            } else {
+                fileValue = 0
+            }
+            let defaultsValue = UserDefaults.standard.integer(forKey: Self.defaultsCounterKey)
+            return max(fileValue, defaultsValue)
         }
         set {
+            UserDefaults.standard.set(newValue, forKey: Self.defaultsCounterKey)
             guard let url = maintenanceCounterFileURL else { return }
             try? "\(newValue)".write(to: url, atomically: true, encoding: .utf8)
         }

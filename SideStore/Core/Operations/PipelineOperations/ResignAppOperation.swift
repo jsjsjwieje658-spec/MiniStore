@@ -56,13 +56,8 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
     
     private func prepareAppBundle(for targetAppBundle: ALTApplication, profiles: [String: ALTProvisioningProfile], appexBundleIds: [String: String]) async throws -> URL {
 
-        let bundleIdentifier = context.targetBundleIdentifier
-        let finalBundleIdentifier: String
-        if let profile = context.useMainProfile ? profiles.values.first : profiles[bundleIdentifier] {
-            finalBundleIdentifier = profile.bundleIdentifier
-        } else {
-            finalBundleIdentifier = bundleIdentifier
-        }
+        let bundleIdentifier = self.hostBundleIdentifier(context.targetBundleIdentifier, profiles: profiles, appBundle: targetAppBundle)
+        let finalBundleIdentifier = bundleIdentifier
         
         // Use customized bundle ID if applicable
         let openURL = InstalledApp.openAppURL(targetBundleIdentifier: finalBundleIdentifier)
@@ -110,7 +105,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         try self.removeMissingAppExtensionReferences(from: appBundle)
         
         for appExtension in appBundle.appExtensions {
-            let updatedAppExBundleId = appExtension.bundleIdentifier.replacingOccurrences(of: targetAppBundle.bundleIdentifier, with: bundleIdentifier)
+            let updatedAppExBundleId = self.extensionBundleID(appExtension, originalHostID: targetAppBundle.bundleIdentifier, correctedHostID: bundleIdentifier)
             try self.prepare(appExtension, bundleID: updatedAppExBundleId, profiles: profiles, appexBundleIds: appexBundleIds)
         }
         
@@ -121,7 +116,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         guard let identifier else {
             throw OperationError.invalidParameters("Bundle is missing bundle identifier.")
         }
-        guard let profile = context.useMainProfile ? profiles.values.first : profiles[identifier] else {
+        guard let profile = self.profile(for: identifier, in: profiles, appBundle: appBundle) else {
             throw OperationError.missingProvisioningProfile(reason: "No provisioning profile found for identifier '\(identifier)'.")
         }
         guard var parser = try? InfoPlistParser(plistURL: appBundle.infoPlistURL) else {
@@ -129,7 +124,7 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         }
         var infoDictionary = parser.rawDictionary as [String: Any]
         
-        let newBundleID = appexBundleIds[identifier] ?? profile.bundleIdentifier
+        let newBundleID = self.rewrittenBundleID(identifier, profile: profile, appBundle: appBundle, appexBundleIds: appexBundleIds)
         infoDictionary[kCFBundleIdentifierKey as String] = newBundleID
 
         // Fix-up BGTaskScheduler identifiers so they stay under the new bundle ID.
@@ -194,7 +189,70 @@ final class ResignAppOperation: BasePipelineOperation<InstallAppOperationContext
         return fileURL
     }
     
+    /// `profiles.values` is unordered. Picking `.first` while "use main profile" is on can
+    /// hand the host the widget's profile, which is how a refresh rewrote the host bundle ID
+    /// to `….AltWidget` and the next launch crashed while presenting Apple ID sign-in.
+    private func profile(for identifier: String, in profiles: [String: ALTProvisioningProfile], appBundle: ALTApplication) -> ALTProvisioningProfile? {
+        if let exact = profiles[identifier] {
+            return exact
+        }
+        let corrected = ALTApplication.correctedSideStoreHostBundleID(identifier)
+        if corrected != identifier, let exact = profiles[corrected] {
+            return exact
+        }
+        guard context.useMainProfile else { return nil }
+        if !appBundle.isAppExtensionBundle {
+            let host = profiles.first { element in
+                !Self.isEmbeddedExtensionIdentifier(element.key) && !Self.isEmbeddedExtensionIdentifier(element.value.bundleIdentifier)
+            }
+            if let host { return host.value }
+        }
+        return profiles.values.first
+    }
+
+    private func hostBundleIdentifier(_ identifier: String, profiles: [String: ALTProvisioningProfile], appBundle: ALTApplication) -> String {
+        let profileID = self.profile(for: identifier, in: profiles, appBundle: appBundle)?.bundleIdentifier ?? identifier
+        return self.rewrittenBundleID(identifier, profileID: profileID, appBundle: appBundle, appexBundleIds: [:])
+    }
+
+    private func rewrittenBundleID(_ identifier: String, profile: ALTProvisioningProfile, appBundle: ALTApplication, appexBundleIds: [String: String]) -> String {
+        let mapped = appexBundleIds[identifier] ?? profile.bundleIdentifier
+        return self.rewrittenBundleID(identifier, profileID: mapped, appBundle: appBundle, appexBundleIds: appexBundleIds)
+    }
+
+    private func rewrittenBundleID(_ identifier: String, profileID: String, appBundle: ALTApplication, appexBundleIds: [String: String]) -> String {
+        if appBundle.isAppExtensionBundle {
+            return self.extensionBundleID(appBundle, originalHostID: identifier, correctedHostID: appexBundleIds[identifier] ?? profileID)
+        }
+        let candidate = appexBundleIds[identifier] ?? profileID
+        let corrected = ALTApplication.correctedSideStoreHostBundleID(candidate)
+        if corrected != candidate {
+            self.debugLog("[ResignAppOperation] Refusing to stamp extension bundle ID '\(candidate)' onto the host app. Using '\(corrected)'.")
+        }
+        return corrected
+    }
+
+    /// Keep `.AltWidget` / `.SideBackup` on the extension even when a previous refresh copied
+    /// that identifier onto the host, so replacing the host ID would otherwise delete the suffix.
+    private func extensionBundleID(_ appExtension: ALTApplication, originalHostID: String, correctedHostID: String) -> String {
+        let hostID = ALTApplication.correctedSideStoreHostBundleID(correctedHostID)
+        // Only SideStore's own extensions have a suffix we are allowed to reattach.
+        // Doing this for every appex would rewrite third-party bundle IDs.
+        if appExtension.bundleIdentifier.isAltStoreAppID, let suffix = appExtension.embeddedExtensionSuffix {
+            return hostID.hasSuffix(suffix) ? hostID : hostID + suffix
+        }
+        if originalHostID.isEmpty || appExtension.bundleIdentifier == originalHostID {
+            return hostID
+        }
+        return appExtension.bundleIdentifier.replacingOccurrences(of: originalHostID, with: hostID)
+    }
+
+    private static func isEmbeddedExtensionIdentifier(_ identifier: String) -> Bool {
+        ALTApplication.embeddedExtensionSuffixes.contains { identifier.hasSuffix($0) }
+    }
+
     private func removeMissingAppExtensionReferences(from appBundle: ALTApplication) throws {
+
         // If app extensions have been removed from an app (either by AltStore or the developer),
         // we must remove all references to them from SC_Info/Manifest.plist (if it exists).
         

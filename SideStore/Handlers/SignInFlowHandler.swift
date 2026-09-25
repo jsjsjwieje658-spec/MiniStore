@@ -19,12 +19,32 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
     var showsDoItLater: Bool = false
     
     private lazy var navigationController: UINavigationController = {
-        let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
-        let navigationController = storyboard.instantiateViewController(withIdentifier: "navigationController") as! UINavigationController
+        if let storyboard = try? Self.authenticationStoryboard(),
+           let navigationController = storyboard.instantiateViewController(withIdentifier: "navigationController") as? UINavigationController {
+            navigationController.isModalInPresentation = true
+            return navigationController
+        }
+        let navigationController = UINavigationController()
         navigationController.isModalInPresentation = true
         return navigationController
     }()
     
+    /// Load Authentication.storyboard from the class's bundle, not `Bundle.main`.
+    ///
+    /// The crash log's host bundle ID was `com.SideStore.SideStore.<team>.AltWidget`, and UIKit
+    /// then reported the settings nib as belonging to that widget bundle. `UIStoryboard(name:bundle: nil)`
+    /// raises an uncaught NSException — which kills the process — when that lookup misses.
+    /// Checking for the compiled storyboard first turns the miss into a thrown error.
+    private static func authenticationStoryboard() throws -> UIStoryboard {
+        let candidates = [Bundle(for: AuthenticationViewController.self), Bundle.main]
+        for bundle in candidates {
+            if bundle.url(forResource: "Authentication", withExtension: "storyboardc") != nil {
+                return UIStoryboard(name: "Authentication", bundle: bundle)
+            }
+        }
+        throw OperationError.invalidParameters("The Apple ID sign-in screen is not in the app bundle. Reinstall MiniStore; a refresh had replaced the app bundle ID with the widget's.")
+    }
+
     init(presentingViewController: UIViewController?) {
         self.presentingViewController = presentingViewController
     }
@@ -54,9 +74,20 @@ class SignInFlowHandler: AnyObject, SignInHandler, AnisetteServerHandler {
         
         return try await withCheckedThrowingContinuation { continuation in
             self.credentialsContinuation = continuation
-            
-            let storyboard = UIStoryboard(name: "Authentication", bundle: nil)
-            let authVC = storyboard.instantiateViewController(withIdentifier: "authenticationViewController") as! AuthenticationViewController
+
+            let storyboard: UIStoryboard
+            do {
+                storyboard = try Self.authenticationStoryboard()
+            } catch {
+                self.credentialsContinuation = nil
+                continuation.resume(throwing: error)
+                return
+            }
+            guard let authVC = storyboard.instantiateViewController(withIdentifier: "authenticationViewController") as? AuthenticationViewController else {
+                self.credentialsContinuation = nil
+                continuation.resume(throwing: OperationError.invalidParameters("Sign-in screen could not be loaded. Reinstall MiniStore — the installed bundle ID was the widget's, so UIKit was opening the wrong bundle."))
+                return
+            }
             self.presentedAuthVC = authVC
             
             authVC.authenticationHandler = { [weak self] (appleID, password, completionHandler) in

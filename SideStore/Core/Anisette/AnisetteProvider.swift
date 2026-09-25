@@ -11,13 +11,29 @@ import SideSign
 
 enum AnisetteProvider {
     static func fetch(handler: AnisetteServerHandler? = nil) async throws -> ALTAnisetteData {
-        if UserDefaults.standard.useOnDeviceAnisette {
+        if UserDefaults.standard.useOnDeviceAnisette, await shouldAttemptOnDeviceAnisette() {
             debugLog("[AnisetteProvider] Fetching anisette via On-Device Anisette (ODA)...")
-            return try await OnDeviceAnisetteManager.shared.fetchAnisetteData()
+            do {
+                return try await OnDeviceAnisetteManager.shared.fetchAnisetteData()
+            } catch {
+                // A native ADI abort cannot be caught, but a thrown provisioning error can.
+                // Sign-in must still be able to complete against a remote server.
+                debugLog("[AnisetteProvider] On-device anisette failed (\(error.localizedDescription)). Falling back to a remote server.")
+            }
+        } else if UserDefaults.standard.useOnDeviceAnisette {
+            debugLog("[AnisetteProvider] Skipping on-device anisette (libraries missing or app group container unavailable after launch wiped adi.pb). Using a remote server.")
         } else {
             debugLog("[AnisetteProvider] Fetching anisette via remote server...")
-            return try await fetchRemote(handler: handler)
         }
+        return try await fetchRemote(handler: handler)
+    }
+
+    /// ODA's C ABI aborts the process (Swift `try` does not catch it) when the shared
+    /// container or the local libraries are missing. Launch maintenance clears `adi.pb`
+    /// whenever that container can't be recorded; don't call into the native client then.
+    private static func shouldAttemptOnDeviceAnisette() async -> Bool {
+        guard FileManager.default.altstoreSharedDirectory != nil else { return false }
+        return await OnDeviceAnisetteManager.shared.isReady()
     }
 
     private static func fetchRemote(handler: AnisetteServerHandler? = nil) async throws -> ALTAnisetteData {

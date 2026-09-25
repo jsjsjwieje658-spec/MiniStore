@@ -62,8 +62,13 @@ public actor AnisetteConfigManager {
                 return parsed
             }
             if let data = Data(base64Encoded: storedId), data.count == 16 {
-                let uuid = data.withUnsafeBytes { UUID(uuid: $0.load(as: uuid_t.self)) }
-                return uuid
+                // `load(as:)` traps (EXC_BREAKPOINT) when the buffer is not aligned.
+                // This runs on the Apple ID sign-in path while resolving the anisette identifier.
+                var bytes = uuid_t(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                withUnsafeMutableBytes(of: &bytes) { dest in
+                    data.copyBytes(to: dest)
+                }
+                return UUID(uuid: bytes)
             }
         }
         let generated = UUID()

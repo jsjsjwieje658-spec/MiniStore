@@ -658,8 +658,7 @@ private extension AppDelegate {
     }
     
     static func reconcileSelfReinstallationIfNeeded() {
-        guard let appGroup = Bundle.main.altstoreAppGroup,
-              let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else {
+        guard let containerURL = FileManager.default.altstoreSharedDirectory else {
             debugLog("[AppDelegate] reconcileSelfReinstallation: Failed to get App Group container.")
             return
         }

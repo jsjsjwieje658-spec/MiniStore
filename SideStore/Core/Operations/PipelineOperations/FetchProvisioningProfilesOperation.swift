@@ -133,6 +133,15 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             #else
             
             let result = teamsMatch ? installedApp.resignedBundleIdentifier : nil
+            // A previous refresh stored the widget bundle ID as the host ID. Reusing it
+            // re-registers that App ID and the next launch crashes on Apple ID sign-in.
+            if let result, targetAppBundle.fileURL.pathExtension != "appex" {
+                let corrected = ALTApplication.correctedSideStoreHostBundleID(result)
+                if corrected != result {
+                    self.debugLog("[FetchProvisioningProfiles] Ignoring corrupted preferred bundle ID '\(result)'. Using '\(corrected)'.")
+                    return corrected
+                }
+            }
             self.debugLog("[FetchProvisioningProfiles] preferredBundleID result: \(result ?? "nil")")
             return result
             
@@ -143,7 +152,7 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
     private func provisionAndFetchProfile(for targetAppBundle: ALTApplication,
                                           parentAppBundle: ALTApplication?,
                                           team: ALTTeam) async throws -> ALTProvisioningProfile {
-        let parentID: String
+        var parentID: String
         if let preferredBundleID = await self.getPreferredBundleID(for: targetAppBundle, team: team) {
             parentID = preferredBundleID
         } else if self.context.appendTeamID {
@@ -152,13 +161,30 @@ class FetchProvisioningProfilesOperation: BasePipelineOperation<InstallAppOperat
             parentID = self.context.targetBundleIdentifier
         }
 
+        if parentAppBundle == nil {
+            let corrected = ALTApplication.correctedSideStoreHostBundleID(parentID)
+            if corrected != parentID {
+                self.debugLog("[FetchProvisioningProfiles] Correcting host bundle ID '\(parentID)' -> '\(corrected)' so it is not the widget identifier.")
+                parentID = corrected
+            }
+        }
+
         let bundleID: String
         if let parentAppBundle = parentAppBundle {
-            guard targetAppBundle.bundleIdentifier.hasPrefix(parentAppBundle.bundleIdentifier + ".") else {
-                throw OperationError.invalidApp(reason: "Extension bundle ID '\(targetAppBundle.bundleIdentifier)' does not start with parent bundle ID '\(parentAppBundle.bundleIdentifier)'.")
+            let parentIdentifier = parentAppBundle.bundleIdentifier
+            if targetAppBundle.bundleIdentifier.hasPrefix(parentIdentifier + ".") {
+                let suffix = String(targetAppBundle.bundleIdentifier.dropFirst(parentIdentifier.count))
+                bundleID = parentID + suffix
+            } else if let suffix = targetAppBundle.embeddedExtensionSuffix,
+                      targetAppBundle.bundleIdentifier == parentIdentifier
+                        || targetAppBundle.bundleIdentifier == ALTApplication.correctedSideStoreHostBundleID(parentIdentifier) {
+                // Host and widget were given the same bundle ID. Reattach the extension suffix
+                // instead of aborting the refresh that is supposed to repair it.
+                bundleID = ALTApplication.correctedSideStoreHostBundleID(parentID) + suffix
+                self.debugLog("[FetchProvisioningProfiles] Recovered extension bundle ID '\(bundleID)' from a host/widget ID collision.")
+            } else {
+                throw OperationError.invalidApp(reason: "Extension bundle ID '\(targetAppBundle.bundleIdentifier)' does not start with parent bundle ID '\(parentIdentifier)'.")
             }
-            let suffix = String(targetAppBundle.bundleIdentifier.dropFirst(parentAppBundle.bundleIdentifier.count))
-            bundleID = parentID + suffix
             self.debugLog("[FetchProvisioningProfiles] Extension bundleID with suffix: \(bundleID)")
         } else {
             bundleID = parentID
@@ -324,21 +350,21 @@ private extension FetchProvisioningProfilesOperation{
         if targetAppBundle.isAltStoreApp {
             verboseLog("[FetchProvisioningProfiles] Application groups before modifying for SideStore: \(applicationGroups)")
             
-            // Remove app groups that contain AltStore since they can be problematic (cause SideStore to expire early)
-            for (index, group) in applicationGroups.enumerated() {
-                if group.contains("AltStore") {
-                    verboseLog("[FetchProvisioningProfiles] Removing application group: \(group)")
-                    applicationGroups.remove(at: index)
-                }
+            // Remove app groups that contain AltStore since they can be problematic (cause SideStore to expire early).
+            // Do not remove-while-enumerating: a second match shifts indexes and traps.
+            let removed = applicationGroups.filter { $0.contains("AltStore") }
+            if !removed.isEmpty {
+                verboseLog("[FetchProvisioningProfiles] Removing application groups: \(removed)")
             }
-            
-            // Make sure we add .AltWidget for the widget
+            applicationGroups.removeAll { $0.contains("AltStore") }
+
+            // Only the widget extension gets the `.AltWidget` group. Applying it to the host
+            // (the old loop did this whenever any group contained "AltWidget") makes
+            // containerURL return nil, which is the launch failure in the sign-in crash log.
             var altStoreAppGroupID = Bundle.baseAltStoreAppGroupID
-            for (_, group) in applicationGroups.enumerated() {
-                if group.contains("AltWidget") {
-                    altStoreAppGroupID += ".AltWidget"
-                    break
-                }
+            let provisioningWidget = targetAppBundle.isAppExtensionBundle && targetAppBundle.bundleIdentifier.contains("AltWidget")
+            if provisioningWidget {
+                altStoreAppGroupID += ".AltWidget"
             }
             
             // Potentially updating app groups for this specific AltStore.

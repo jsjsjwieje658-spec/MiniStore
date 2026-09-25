@@ -97,9 +97,21 @@ public extension Bundle
     }
     
     // @livecontainer
+    /// Host app group. Prefer a group that is not an embedded-extension group: a refresh that
+    /// stamped `.AltWidget` onto the host made `containerURL` return nil (launch log:
+    /// "Failed to get App Group container") even when the base group was still entitled.
     @objc dynamic var altstoreAppGroup: String? {
-        let appGroup = self.appGroups.first { $0.contains(Bundle.baseAltStoreAppGroupID) }
-        return appGroup
+        let matches = self.appGroups.filter { $0.contains(Bundle.baseAltStoreAppGroupID) }
+        return matches.first { group in
+            !group.contains("AltWidget") && !group.contains("SideBackup")
+        } ?? matches.first
+    }
+
+    /// Every entitled group that belongs to this app, host group first.
+    var altstoreAppGroupCandidates: [String] {
+        let matches = self.appGroups.filter { $0.contains(Bundle.baseAltStoreAppGroupID) }
+        let host = matches.filter { !$0.contains("AltWidget") && !$0.contains("SideBackup") }
+        return host + matches.filter { !host.contains($0) }
     }
     
 }
