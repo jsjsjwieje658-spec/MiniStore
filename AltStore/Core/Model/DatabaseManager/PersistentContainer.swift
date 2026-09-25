@@ -51,11 +51,6 @@ public enum DatabaseError: LocalizedError, CustomNSError, Sendable, Equatable {
 
 open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
     open var isMigrationRequired: Bool {
-        #if !os(tvOS)
-        guard FileManager.default.altstoreSharedDirectory != nil else {
-            return false
-        }
-        #endif
         for description in self.persistentStoreDescriptions {
             guard let url = description.url,
                   let metadata = try? NSPersistentStoreCoordinator.metadataForPersistentStore(ofType: description.type, at: url, options: description.options) else {
@@ -74,19 +69,57 @@ open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
     private let parentBackgroundContexts = NSHashTable<NSManagedObjectContext>.weakObjects()
     private let pendingSaveParentBackgroundContexts = NSHashTable<NSManagedObjectContext>.weakObjects()
     
-    open override class func defaultDirectoryURL() -> URL {
+    /// App Support store used when the shared app group container cannot be opened.
+    /// Temporary directories are purged by iOS, so this has to live in the sandbox.
+    static func sandboxDatabaseDirectoryURL() -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let directory = base.appendingPathComponent("Database", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
+    /// Prefer the app group. If iOS will not open it (sideload without the entitlement, or a
+    /// refresh that stamped `.AltWidget` onto the host so `containerURL` returns nil), use the
+    /// sandbox store instead of refusing to launch.
+    static func resolvedDatabaseDirectoryURL() -> URL {
         #if os(tvOS)
         return FileManager.default.cachesDirectory
         #else
-        guard let sharedDirectoryURL = FileManager.default.altstoreSharedDirectory else {
-            return FileManager.default.temporaryDirectory.appendingPathComponent("MissingAppGroupContainer")
+        if let sharedDirectoryURL = FileManager.default.altstoreSharedDirectory {
+            let databaseDirectoryURL = sharedDirectoryURL.appendingPathComponent("Database", isDirectory: true)
+            try? FileManager.default.createDirectory(at: databaseDirectoryURL, withIntermediateDirectories: true)
+            migrateSandboxStoreIfNeeded(into: databaseDirectoryURL)
+            return databaseDirectoryURL
         }
-        
-        let databaseDirectoryURL = sharedDirectoryURL.appendingPathComponent("Database")
-        try? FileManager.default.createDirectory(at: databaseDirectoryURL, withIntermediateDirectories: true, attributes: nil)
-
-        return databaseDirectoryURL
+        debugLog("[Database] App group container is unavailable. Using the sandbox database so launch and Apple ID sign-in can finish.")
+        return sandboxDatabaseDirectoryURL()
         #endif
+    }
+
+    private static func migrateSandboxStoreIfNeeded(into sharedDirectory: URL) {
+        let sandbox = sandboxDatabaseDirectoryURL()
+        let fileName = AppConstants.Database.fileName
+        let sandboxStore = sandbox.appendingPathComponent(fileName)
+        let sharedStore = sharedDirectory.appendingPathComponent(fileName)
+        guard FileManager.default.fileExists(atPath: sandboxStore.path),
+              !FileManager.default.fileExists(atPath: sharedStore.path) else { return }
+        for suffix in ["", "-wal", "-shm"] {
+            let source = sandbox.appendingPathComponent(fileName + suffix)
+            let destination = sharedDirectory.appendingPathComponent(fileName + suffix)
+            guard FileManager.default.fileExists(atPath: source.path) else { continue }
+            do {
+                try FileManager.default.moveItem(at: source, to: destination)
+                debugLog("[Database] Moved sandbox store '\(source.lastPathComponent)' into the app group.")
+            } catch {
+                debugLog("[Database] Failed to move sandbox store '\(source.lastPathComponent)': \(error.localizedDescription)")
+            }
+        }
+    }
+
+    open override class func defaultDirectoryURL() -> URL {
+        resolvedDatabaseDirectoryURL()
     }
     
     public init(name: String, bundle: Bundle) {
@@ -110,13 +143,15 @@ open class PersistentContainer: NSPersistentContainer, @unchecked Sendable {
     }
     
     open func loadPersistentStores() async throws {
-        #if !os(tvOS)
-        guard FileManager.default.altstoreSharedDirectory != nil else {
-            throw DatabaseError.missingAppGroup(
-                reason: NSLocalizedString("Unable to access the shared App Group container. Refusing to create or use a private sandbox fallback database.", comment: "")
-            )
+        // Retarget in case the description was captured before the group became available.
+        // A missing group must not throw: the launch screen then shows "App Group Container
+        // Inaccessible", and the later account save raises NSInternalInconsistencyException
+        // ("no persistent stores") which kills the process after the 2FA passcode.
+        let directory = Self.resolvedDatabaseDirectoryURL()
+        for description in self.persistentStoreDescriptions {
+            let fileName = description.url?.lastPathComponent ?? AppConstants.Database.fileName
+            description.url = directory.appendingPathComponent(fileName)
         }
-        #endif
 
         for description in self.persistentStoreDescriptions {
             guard let url = description.url,

@@ -319,7 +319,13 @@ private extension SignInOperation {
                     }
                 }
             }
-            
+
+            // context.save() raises NSInternalInconsistencyException (not a Swift error) when
+            // the coordinator has no store. That is the crash after the 2FA passcode in the
+            // logs: sign-in succeeded, then saving the team killed the process.
+            guard let coordinator = context.persistentStoreCoordinator, !coordinator.persistentStores.isEmpty else {
+                throw DatabaseError.missingAppGroup(reason: NSLocalizedString("The account could not be saved because the database is not open.", comment: ""))
+            }
             try context.save()
         }
     }
