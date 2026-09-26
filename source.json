@@ -10,12 +10,12 @@
           "track": "nightly",
           "releases": [
             {
-              "version": "0.7.3-20260925.3+53360983",
-              "date": "2026-09-25T21:29:45Z",
-              "localizedDescription": "#### This is release for:\n  - version: \"0.7.3-20260925.3+53360983\"\n  - revision: \"53360983\"\n  - timestamp: \"Fri Sep 25 21:29:45 2026\"\n\n#### What's Changed:\n- Fix launch and Apple ID sign-in when the app group is missing.\n\n#### Full Changelog: [41227281...53360983](https://github.com/jsjsjwieje658-spec/MiniStore/compare/41227281e7bc9a06c056a4d5be3c76671ddb89cd...533609835cdeedc417820bde0f5e73a50c688604)\n",
+              "version": "0.7.3-20260926.5+6bfa870f",
+              "date": "2026-09-26T06:23:06Z",
+              "localizedDescription": "#### This is release for:\n  - version: \"0.7.3-20260926.5+6bfa870f\"\n  - revision: \"6bfa870f\"\n  - timestamp: \"Sat Sep 26 06:23:06 2026\"\n\n#### What's Changed:\n- Load an existing pairing file before the VPN handshake.\n\n#### Full Changelog: [53360983...6bfa870f](https://github.com/jsjsjwieje658-spec/MiniStore/compare/533609835cdeedc417820bde0f5e73a50c688604...6bfa870f3cdd1fc4a4deb92516e185cdf73c895d)\n",
               "downloadURL": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/download/nightly/MiniStore.ipa",
-              "size": 29301720,
-              "sha256": "81c7de26b82c13977196264a4e4d9eff664fd95bd95ee50861294cb36c8da822"
+              "size": 29309915,
+              "sha256": "a8351f09a4021b9ae9dc9f2b4e53e129472587d64f8d34652fef1eef299df25f"
             }
           ]
         }
@@ -32,16 +32,24 @@
         "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/screenshots/MiniStore-2.png",
         "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/screenshots/MiniStore-3.png"
       ],
-      "version": "0.7.3-20260925.3+53360983",
-      "versionDate": "2026-09-25T21:29:45Z",
-      "size": 29301720,
-      "sha256": "81c7de26b82c13977196264a4e4d9eff664fd95bd95ee50861294cb36c8da822",
-      "versionDescription": "#### What's Changed:\n- Fix launch and Apple ID sign-in when the app group is missing.\n\n#### Full Changelog: [41227281...53360983](https://github.com/jsjsjwieje658-spec/MiniStore/compare/41227281e7bc9a06c056a4d5be3c76671ddb89cd...533609835cdeedc417820bde0f5e73a50c688604)",
+      "version": "0.7.3-20260926.5+6bfa870f",
+      "versionDate": "2026-09-26T06:23:06Z",
+      "size": 29309915,
+      "sha256": "a8351f09a4021b9ae9dc9f2b4e53e129472587d64f8d34652fef1eef299df25f",
+      "versionDescription": "#### What's Changed:\n- Load an existing pairing file before the VPN handshake.\n\n#### Full Changelog: [53360983...6bfa870f](https://github.com/jsjsjwieje658-spec/MiniStore/compare/533609835cdeedc417820bde0f5e73a50c688604...6bfa870f3cdd1fc4a4deb92516e185cdf73c895d)",
       "downloadURL": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/download/nightly/MiniStore.ipa"
     }
   ],
   "iconURL": "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/AltStore/Resources/Icons.xcassets/AppIcon.appiconset/MiniStore.png",
   "news": [
+    {
+      "identifier": "ministore-nightly-0.7.3-20260926.5+6bfa870f",
+      "title": "MiniStore Nightly — 0.7.3-20260926.5+6bfa870f",
+      "caption": "Load an existing pairing file before the VPN handshake.",
+      "date": "2026-09-26T06:23:06Z",
+      "tintColor": "A405FA",
+      "url": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/tag/nightly"
+    },
     {
       "identifier": "ministore-nightly-0.7.3-20260925.3+53360983",
       "title": "MiniStore Nightly — 0.7.3-20260925.3+53360983",
