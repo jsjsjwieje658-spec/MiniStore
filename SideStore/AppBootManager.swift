@@ -34,13 +34,24 @@ public final class AppBootManager {
         debugLog("[AppBootManager] startMinimuxer() entered")
         defer { debugLog("[AppBootManager] startMinimuxer() exited") }
         
-        if UserDefaults.standard.enableEMPforWireguard {
-            debugLog("[AppBootManager] Starting EMProxy before minimuxer...")
-            try await startEMProxy()
-        }
-
+        // Load the pairing file before EMProxy. EMProxy can spend its whole
+        // handshake timeout on a stale peer override; that used to leave
+        // minimuxer unstarted, so registration reported an on-disk pairing
+        // file as missing and asked for it to be imported again.
         let preferred = PairingFileManager.shared.preferredProtocol
         try await minimuxerStart(pairingFile, preferred: preferred)
+
+        if UserDefaults.standard.enableEMPforWireguard {
+            debugLog("[AppBootManager] Starting EMProxy after pairing file is loaded...")
+            do {
+                try await startEMProxy()
+                // The handshake may have just made the live utun peer answer.
+                // Rescan so a stale override cannot leave the endpoint nil.
+                await bindConnectionConfig()
+            } catch {
+                debugLog("[AppBootManager] EMProxy failed after pairing load, continuing: \(error)")
+            }
+        }
         
         // Validate the pairing by trying to fetch the UDID
         do {

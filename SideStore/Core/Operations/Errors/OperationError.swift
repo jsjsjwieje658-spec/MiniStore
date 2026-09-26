@@ -108,6 +108,9 @@ public enum OperationError: LocalizedError, CustomNSError, Sendable, Equatable {
         case .openAppFailed(let name):
             return "SideStore was denied permission to launch \(name)."
         case .pairingNotComplete(let reason):
+            if PairingFileManager.shared.hasPairingFile() {
+                return "Pairing file is already installed, but it is not loaded yet: \(reason)\n\nYou do not need to import it again. Wait for startup to finish, then retry."
+            }
             return "Pairing Required: \(reason)\n\nWithout a valid pairing file, SideStore operations cannot connect to your device. Please pair your device or import a valid pairing file."
         case .pledgeInactive(let appName):
             return "Your pledge is no longer active. Please renew it to continue using \(appName) normally."

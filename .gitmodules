@@ -2,7 +2,7 @@
 
 [submodule "Dependencies/minimuxer"]
     path = Dependencies/minimuxer
-    url = https://github.com/SideStore/minimuxer
+    url = https://github.com/jsjsjwieje658-spec/minimuxer
     branch = develop
 [submodule "Dependencies/SideSign"]
 	path = Dependencies/SideSign

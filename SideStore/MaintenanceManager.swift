@@ -230,6 +230,11 @@ private extension MaintenanceManager {
 
         let remoteRP = try? PairingFileManager.shared.parse(content: content, preferred: .rppairing)
         let lockdown = try? PairingFileManager.shared.parse(content: content, preferred: .lockdown)
+        guard remoteRP != nil || lockdown != nil else {
+            debugLog("[MaintenanceManager] Left legacy pairing file in place; it could not be parsed.")
+            return
+        }
+
         if remoteRP != nil && !fileManager.fileExists(atPath: remoteURL.path) {
             try? content.write(to: remoteURL, atomically: true, encoding: .utf8)
             debugLog("[MaintenanceManager] Migrated remote pairing file to '\(remoteURL.path)'.")
@@ -238,6 +243,10 @@ private extension MaintenanceManager {
             try? content.write(to: lockdownURL, atomically: true, encoding: .utf8)
             debugLog("[MaintenanceManager] Migrated lockdown pairing file to '\(lockdownURL.path)'.")
         }
+        if PairingFileManager.shared.persistedActiveProtocol == nil {
+            PairingFileManager.shared.persistedActiveProtocol = lockdown != nil ? .lockdown : .rppairing
+        }
+        UserDefaults.standard.isPairingReset = false
 
         try? fileManager.removeItem(at: legacyURL)
         debugLog("[MaintenanceManager] Removed legacy pairing file '\(legacyURL.path)'.")

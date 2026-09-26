@@ -213,9 +213,39 @@ public func ensureMinimuxerReady() async throws {
     if !CellularRefreshManager.shared.isEnabled {
         try await withRemotePairingRetry {
             if case .failure(let error) = await isMinimuxerReady() {
+                if await recoverUnreadyMinimuxer(error), case .success = await isMinimuxerReady() {
+                    return
+                }
+                if case .failure(let latest) = await isMinimuxerReady() {
+                    throw latest.asOperationError
+                }
                 throw error.asOperationError
             }
         }
+    }
+}
+
+private func recoverUnreadyMinimuxer(_ error: MinimuxerError) async -> Bool {
+    switch error {
+    case .pairingNotLoaded:
+        guard let pf = PairingFileManager.shared.fetchPairingFile() else {
+            debugLog("[SideStore] pairing not loaded and no pairing file on disk")
+            return false
+        }
+        debugLog("[SideStore] pairing file is on disk but minimuxer has not loaded it; starting now")
+        do {
+            try await AppBootManager.shared.startMinimuxer(pairingFile: pf)
+            return true
+        } catch {
+            debugLog("[SideStore] failed to load on-disk pairing file: \(error)")
+            return false
+        }
+    case .noDevice, .noVPN, .invalidVPN:
+        debugLog("[SideStore] tunnel not ready (\(error)); rescanning interfaces")
+        await bindConnectionConfig()
+        return true
+    default:
+        return false
     }
 }
 

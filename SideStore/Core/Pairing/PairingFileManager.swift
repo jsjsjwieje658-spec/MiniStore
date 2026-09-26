@@ -50,14 +50,21 @@ final class PairingFileManager: NSObject {
     }
 
     nonisolated func hasPairingFile() -> Bool {
-        guard !UserDefaults.standard.isPairingReset else { return false }
-        if let target = preferredProtocol, hasPairingFile(for: target) {
+        if !UserDefaults.standard.isPairingReset {
+            if let target = preferredProtocol, hasPairingFile(for: target) {
+                return true
+            }
+            if let mode = persistedActiveProtocol, hasPairingFile(for: mode) {
+                return true
+            }
+        }
+        // Protocol prefs can be nil, and isPairingReset defaults to true. Neither
+        // may hide a pairing file that is already in Documents.
+        if hasPairingFile(for: .lockdown) || hasPairingFile(for: .rppairing) {
             return true
         }
-        if let mode = persistedActiveProtocol, hasPairingFile(for: mode) {
-            return true
-        }
-        return false
+        let legacy = FileManager.default.documentsDirectory.appendingPathComponent(AppConstants.Pairing.legacyPairingFileName)
+        return FileManager.default.fileExists(atPath: legacy.path)
     }
 
     nonisolated func metadata(for mode: PairingProtocol) -> PairingFileMetadata {
@@ -86,15 +93,46 @@ final class PairingFileManager: NSObject {
     }
 
     nonisolated func fetchPairingFile(preferred: PairingProtocol? = nil) -> String? {
-        guard !UserDefaults.standard.isPairingReset else { return nil }
         let targetPreferred = preferred ?? preferredProtocol
-        if let targetPreferred, let contents = fetchPairingFile(for: targetPreferred) {
-            return contents
+        if !UserDefaults.standard.isPairingReset {
+            if let targetPreferred, let contents = fetchPairingFile(for: targetPreferred) {
+                return contents
+            }
+            if let persisted = persistedActiveProtocol, let contents = fetchPairingFile(for: persisted) {
+                return contents
+            }
         }
-        if let persisted = persistedActiveProtocol {
-            return fetchPairingFile(for: persisted)
+        return adoptExistingPairingFile()
+    }
+
+    /// Uses a pairing file that is already on disk when saved protocol prefs do not point at it.
+    private nonisolated func adoptExistingPairingFile() -> String? {
+        for mode in [PairingProtocol.lockdown, .rppairing] {
+            if let contents = fetchPairingFile(for: mode) {
+                rememberInstalledPairing(mode)
+                return contents
+            }
         }
-        return nil
+        let legacyURL = FileManager.default.documentsDirectory.appendingPathComponent(AppConstants.Pairing.legacyPairingFileName)
+        guard FileManager.default.fileExists(atPath: legacyURL.path),
+              let contents = try? String(contentsOf: legacyURL), !contents.isEmpty else {
+            return nil
+        }
+        if let parsed = try? parse(content: contents) {
+            rememberInstalledPairing(parsed.mode)
+        } else {
+            UserDefaults.standard.isPairingReset = false
+        }
+        return contents
+    }
+
+    private nonisolated func rememberInstalledPairing(_ mode: PairingProtocol) {
+        if persistedActiveProtocol == nil {
+            persistedActiveProtocol = mode
+        }
+        if UserDefaults.standard.isPairingReset {
+            UserDefaults.standard.isPairingReset = false
+        }
     }
     
     @discardableResult
