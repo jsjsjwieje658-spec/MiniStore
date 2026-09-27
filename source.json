@@ -10,12 +10,12 @@
           "track": "nightly",
           "releases": [
             {
-              "version": "0.7.3-20260926.5+6bfa870f",
-              "date": "2026-09-26T06:23:06Z",
-              "localizedDescription": "#### This is release for:\n  - version: \"0.7.3-20260926.5+6bfa870f\"\n  - revision: \"6bfa870f\"\n  - timestamp: \"Sat Sep 26 06:23:06 2026\"\n\n#### What's Changed:\n- Load an existing pairing file before the VPN handshake.\n\n#### Full Changelog: [53360983...6bfa870f](https://github.com/jsjsjwieje658-spec/MiniStore/compare/533609835cdeedc417820bde0f5e73a50c688604...6bfa870f3cdd1fc4a4deb92516e185cdf73c895d)\n",
+              "version": "0.7.3-20260927.8+972e625e",
+              "date": "2026-09-27T06:09:18Z",
+              "localizedDescription": "#### This is release for:\n  - version: \"0.7.3-20260927.8+972e625e\"\n  - revision: \"972e625e\"\n  - timestamp: \"Sun Sep 27 06:09:18 2026\"\n\n#### What's Changed:\n- minimuxer 52a3641: fix typed-throws conversion in retry helper\n- Wait for the tunnel instead of failing installs during startup or a VPN flap.\n\n#### Full Changelog: [6bfa870f...972e625e](https://github.com/jsjsjwieje658-spec/MiniStore/compare/6bfa870f3cdd1fc4a4deb92516e185cdf73c895d...972e625e98844d9dad8216758a1e8662fb97a4de)\n",
               "downloadURL": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/download/nightly/MiniStore.ipa",
-              "size": 29309915,
-              "sha256": "a8351f09a4021b9ae9dc9f2b4e53e129472587d64f8d34652fef1eef299df25f"
+              "size": 29322047,
+              "sha256": "64251fe8ba1115a97f0e733c1dd2af8cc8b71bf1f24805d10e090723bb599f29"
             }
           ]
         }
@@ -32,16 +32,24 @@
         "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/screenshots/MiniStore-2.png",
         "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/screenshots/MiniStore-3.png"
       ],
-      "version": "0.7.3-20260926.5+6bfa870f",
-      "versionDate": "2026-09-26T06:23:06Z",
-      "size": 29309915,
-      "sha256": "a8351f09a4021b9ae9dc9f2b4e53e129472587d64f8d34652fef1eef299df25f",
-      "versionDescription": "#### What's Changed:\n- Load an existing pairing file before the VPN handshake.\n\n#### Full Changelog: [53360983...6bfa870f](https://github.com/jsjsjwieje658-spec/MiniStore/compare/533609835cdeedc417820bde0f5e73a50c688604...6bfa870f3cdd1fc4a4deb92516e185cdf73c895d)",
+      "version": "0.7.3-20260927.8+972e625e",
+      "versionDate": "2026-09-27T06:09:18Z",
+      "size": 29322047,
+      "sha256": "64251fe8ba1115a97f0e733c1dd2af8cc8b71bf1f24805d10e090723bb599f29",
+      "versionDescription": "#### What's Changed:\n- minimuxer 52a3641: fix typed-throws conversion in retry helper\n- Wait for the tunnel instead of failing installs during startup or a VPN flap.\n\n#### Full Changelog: [6bfa870f...972e625e](https://github.com/jsjsjwieje658-spec/MiniStore/compare/6bfa870f3cdd1fc4a4deb92516e185cdf73c895d...972e625e98844d9dad8216758a1e8662fb97a4de)",
       "downloadURL": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/download/nightly/MiniStore.ipa"
     }
   ],
   "iconURL": "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/AltStore/Resources/Icons.xcassets/AppIcon.appiconset/MiniStore.png",
   "news": [
+    {
+      "identifier": "ministore-nightly-0.7.3-20260927.8+972e625e",
+      "title": "MiniStore Nightly — 0.7.3-20260927.8+972e625e",
+      "caption": "minimuxer 52a3641: fix typed-throws conversion in retry helper",
+      "date": "2026-09-27T06:09:18Z",
+      "tintColor": "A405FA",
+      "url": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/tag/nightly"
+    },
     {
       "identifier": "ministore-nightly-0.7.3-20260926.5+6bfa870f",
       "title": "MiniStore Nightly — 0.7.3-20260926.5+6bfa870f",
