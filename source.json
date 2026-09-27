@@ -10,12 +10,12 @@
           "track": "nightly",
           "releases": [
             {
-              "version": "0.7.3-20260927.8+972e625e",
-              "date": "2026-09-27T06:09:18Z",
-              "localizedDescription": "#### This is release for:\n  - version: \"0.7.3-20260927.8+972e625e\"\n  - revision: \"972e625e\"\n  - timestamp: \"Sun Sep 27 06:09:18 2026\"\n\n#### What's Changed:\n- minimuxer 52a3641: fix typed-throws conversion in retry helper\n- Wait for the tunnel instead of failing installs during startup or a VPN flap.\n\n#### Full Changelog: [6bfa870f...972e625e](https://github.com/jsjsjwieje658-spec/MiniStore/compare/6bfa870f3cdd1fc4a4deb92516e185cdf73c895d...972e625e98844d9dad8216758a1e8662fb97a4de)\n",
+              "version": "0.7.3-20260927.9+9631f1ce",
+              "date": "2026-09-27T07:50:12Z",
+              "localizedDescription": "#### This is release for:\n  - version: \"0.7.3-20260927.9+9631f1ce\"\n  - revision: \"9631f1ce\"\n  - timestamp: \"Sun Sep 27 07:50:12 2026\"\n\n#### What's Changed:\n- minimuxer eb2fce5: IDevice xcframework with lockdown session keepalive\n\n#### Full Changelog: [972e625e...9631f1ce](https://github.com/jsjsjwieje658-spec/MiniStore/compare/972e625e98844d9dad8216758a1e8662fb97a4de...9631f1cec060f99202c7416b9585549423ca82c2)\n",
               "downloadURL": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/download/nightly/MiniStore.ipa",
-              "size": 29322047,
-              "sha256": "64251fe8ba1115a97f0e733c1dd2af8cc8b71bf1f24805d10e090723bb599f29"
+              "size": 29320471,
+              "sha256": "76baa3f8d505cc00ea1a5b0ab1aad9ee2659eb646212d76c74fadcaa986f50fa"
             }
           ]
         }
@@ -32,16 +32,24 @@
         "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/screenshots/MiniStore-2.png",
         "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/screenshots/MiniStore-3.png"
       ],
-      "version": "0.7.3-20260927.8+972e625e",
-      "versionDate": "2026-09-27T06:09:18Z",
-      "size": 29322047,
-      "sha256": "64251fe8ba1115a97f0e733c1dd2af8cc8b71bf1f24805d10e090723bb599f29",
-      "versionDescription": "#### What's Changed:\n- minimuxer 52a3641: fix typed-throws conversion in retry helper\n- Wait for the tunnel instead of failing installs during startup or a VPN flap.\n\n#### Full Changelog: [6bfa870f...972e625e](https://github.com/jsjsjwieje658-spec/MiniStore/compare/6bfa870f3cdd1fc4a4deb92516e185cdf73c895d...972e625e98844d9dad8216758a1e8662fb97a4de)",
+      "version": "0.7.3-20260927.9+9631f1ce",
+      "versionDate": "2026-09-27T07:50:12Z",
+      "size": 29320471,
+      "sha256": "76baa3f8d505cc00ea1a5b0ab1aad9ee2659eb646212d76c74fadcaa986f50fa",
+      "versionDescription": "#### What's Changed:\n- minimuxer eb2fce5: IDevice xcframework with lockdown session keepalive\n\n#### Full Changelog: [972e625e...9631f1ce](https://github.com/jsjsjwieje658-spec/MiniStore/compare/972e625e98844d9dad8216758a1e8662fb97a4de...9631f1cec060f99202c7416b9585549423ca82c2)",
       "downloadURL": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/download/nightly/MiniStore.ipa"
     }
   ],
   "iconURL": "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/AltStore/Resources/Icons.xcassets/AppIcon.appiconset/MiniStore.png",
   "news": [
+    {
+      "identifier": "ministore-nightly-0.7.3-20260927.9+9631f1ce",
+      "title": "MiniStore Nightly — 0.7.3-20260927.9+9631f1ce",
+      "caption": "minimuxer eb2fce5: IDevice xcframework with lockdown session keepalive",
+      "date": "2026-09-27T07:50:12Z",
+      "tintColor": "A405FA",
+      "url": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/tag/nightly"
+    },
     {
       "identifier": "ministore-nightly-0.7.3-20260927.8+972e625e",
       "title": "MiniStore Nightly — 0.7.3-20260927.8+972e625e",
