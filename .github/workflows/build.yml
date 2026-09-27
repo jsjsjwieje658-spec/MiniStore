@@ -1,40 +1,50 @@
-name: Pull Request SideStore build
+name: Build
+
+# The single build pipeline: every push to develop (and every PR) produces
+# a signed-for-sideload MiniStore.ipa + dSYMs + build logs as artifacts.
+# Tests live in test.yml. Nothing deploys anywhere from here.
 
 on:
-  pull_request:
-    # types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [develop]
     paths-ignore:
       - '**.md'
       - 'LICENSE'
       - '.editorconfig'
       - '.gitignore'
       - '.gitmodules'
-      - '.github/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.editorconfig'
+      - '.gitignore'
+      - '.gitmodules'
+  workflow_dispatch:
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build and upload SideStore
-    if: ${{ github.event.pull_request.draft == false }}
     runs-on: macos-26
-
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 1    # shallow clone just for PR
+          fetch-depth: 0
 
       - run: brew install ldid xcbeautify
 
       - name: Setup Env
         run: |
           MARKETING_VERSION=$(python3 scripts/ci/workflow.py get-marketing-version)
-          SHORT_COMMIT=$(git rev-parse --short ${{ github.event.pull_request.head.sha }})
-          NORMALIZED_VERSION="${MARKETING_VERSION}-pr.${{ github.event.pull_request.number }}+${SHORT_COMMIT}"
+          SHORT_COMMIT=$(python3 scripts/ci/workflow.py commit-id)
+          NORMALIZED_VERSION=$(python3 scripts/ci/workflow.py compute-normalized \
+              "$MARKETING_VERSION" \
+              "${{ github.run_number }}" \
+              "$SHORT_COMMIT")
           python3 scripts/ci/workflow.py set-marketing-version "$NORMALIZED_VERSION"
           echo "SHORT_COMMIT=$SHORT_COMMIT" | tee -a $GITHUB_ENV
           echo "MARKETING_VERSION=$NORMALIZED_VERSION" | tee -a $GITHUB_ENV
@@ -42,9 +52,6 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1.6.0
         with:
-          # Must match nightly.yml and stable.yml. A PR check on an older toolchain than the
-          # one that builds releases fails on things that would never ship — 26.2 rejected an
-          # expression 26.4 accepts, so a PR went red for a build the nightly had passed.
           xcode-version: "26.4"
 
       - name: Restore Cache (exact)
@@ -72,7 +79,6 @@ jobs:
         run: |
           python3 scripts/ci/workflow.py build; STATUS=$?
           python3 scripts/ci/workflow.py encrypt-build
-          mv MiniStore.ipa MiniStore-${{ env.MARKETING_VERSION }}.ipa
           exit $STATUS
 
       - name: Save Cache
@@ -92,7 +98,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: MiniStore-${{ env.MARKETING_VERSION }}.ipa
-          path: MiniStore-${{ env.MARKETING_VERSION }}.ipa
+          path: MiniStore.ipa
 
       - uses: actions/upload-artifact@v4
         with:
