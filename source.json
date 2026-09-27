@@ -10,12 +10,12 @@
           "track": "nightly",
           "releases": [
             {
-              "version": "0.7.3-20260927.9+9631f1ce",
-              "date": "2026-09-27T07:50:12Z",
-              "localizedDescription": "#### This is release for:\n  - version: \"0.7.3-20260927.9+9631f1ce\"\n  - revision: \"9631f1ce\"\n  - timestamp: \"Sun Sep 27 07:50:12 2026\"\n\n#### What's Changed:\n- minimuxer eb2fce5: IDevice xcframework with lockdown session keepalive\n\n#### Full Changelog: [972e625e...9631f1ce](https://github.com/jsjsjwieje658-spec/MiniStore/compare/972e625e98844d9dad8216758a1e8662fb97a4de...9631f1cec060f99202c7416b9585549423ca82c2)\n",
+              "version": "0.7.3-20260927.11+9bfc2ad3",
+              "date": "2026-09-27T14:28:33Z",
+              "localizedDescription": "#### This is release for:\n  - version: \"0.7.3-20260927.11+9bfc2ad3\"\n  - revision: \"9bfc2ad3\"\n  - timestamp: \"Sun Sep 27 14:28:33 2026\"\n\n#### What's Changed:\n- minimuxer 2410e37: fix CandidatePeer.tunnel optional\n- minimuxer 54bae0f: prefer direct-to-self LAN endpoint; clarify LAN usage text\n\n#### Full Changelog: [9631f1ce...9bfc2ad3](https://github.com/jsjsjwieje658-spec/MiniStore/compare/9631f1cec060f99202c7416b9585549423ca82c2...9bfc2ad3c2bec0b97433418cb17933c353d74d30)\n",
               "downloadURL": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/download/nightly/MiniStore.ipa",
-              "size": 29320471,
-              "sha256": "76baa3f8d505cc00ea1a5b0ab1aad9ee2659eb646212d76c74fadcaa986f50fa"
+              "size": 29326396,
+              "sha256": "59b6d59cb2a1e018b97f0004e4006d1cb1c1150608dd34845e638673085b1b4d"
             }
           ]
         }
@@ -32,16 +32,24 @@
         "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/screenshots/MiniStore-2.png",
         "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/screenshots/MiniStore-3.png"
       ],
-      "version": "0.7.3-20260927.9+9631f1ce",
-      "versionDate": "2026-09-27T07:50:12Z",
-      "size": 29320471,
-      "sha256": "76baa3f8d505cc00ea1a5b0ab1aad9ee2659eb646212d76c74fadcaa986f50fa",
-      "versionDescription": "#### What's Changed:\n- minimuxer eb2fce5: IDevice xcframework with lockdown session keepalive\n\n#### Full Changelog: [972e625e...9631f1ce](https://github.com/jsjsjwieje658-spec/MiniStore/compare/972e625e98844d9dad8216758a1e8662fb97a4de...9631f1cec060f99202c7416b9585549423ca82c2)",
+      "version": "0.7.3-20260927.11+9bfc2ad3",
+      "versionDate": "2026-09-27T14:28:33Z",
+      "size": 29326396,
+      "sha256": "59b6d59cb2a1e018b97f0004e4006d1cb1c1150608dd34845e638673085b1b4d",
+      "versionDescription": "#### What's Changed:\n- minimuxer 2410e37: fix CandidatePeer.tunnel optional\n- minimuxer 54bae0f: prefer direct-to-self LAN endpoint; clarify LAN usage text\n\n#### Full Changelog: [9631f1ce...9bfc2ad3](https://github.com/jsjsjwieje658-spec/MiniStore/compare/9631f1cec060f99202c7416b9585549423ca82c2...9bfc2ad3c2bec0b97433418cb17933c353d74d30)",
       "downloadURL": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/download/nightly/MiniStore.ipa"
     }
   ],
   "iconURL": "https://raw.githubusercontent.com/The-Big-Mini/MiniStore/develop/AltStore/Resources/Icons.xcassets/AppIcon.appiconset/MiniStore.png",
   "news": [
+    {
+      "identifier": "ministore-nightly-0.7.3-20260927.11+9bfc2ad3",
+      "title": "MiniStore Nightly — 0.7.3-20260927.11+9bfc2ad3",
+      "caption": "minimuxer 2410e37: fix CandidatePeer.tunnel optional",
+      "date": "2026-09-27T14:28:33Z",
+      "tintColor": "A405FA",
+      "url": "https://github.com/jsjsjwieje658-spec/MiniStore/releases/tag/nightly"
+    },
     {
       "identifier": "ministore-nightly-0.7.3-20260927.9+9631f1ce",
       "title": "MiniStore Nightly — 0.7.3-20260927.9+9631f1ce",
