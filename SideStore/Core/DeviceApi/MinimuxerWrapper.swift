@@ -204,24 +204,46 @@ public func isMinimuxerReady() async -> Result<Bool, MinimuxerError> {
     return await minimuxer.core.isReady(withNetworkCheck: !isEnabled)
 }
 
-public func ensureMinimuxerReady() async throws {
+public func ensureMinimuxerReady(timeout: TimeInterval = 60) async throws {
     if CellularRefreshManager.shared.isEnabled && UserDefaults.standard.enableEMPforWireguard {
         throw OperationError.invalidVPN(
             reason: "WireGuard VPN is not supported with Cellular Refresh because iOS pauses the WireGuard tunnel when cellular data is toggled off."
         )
     }
-    if !CellularRefreshManager.shared.isEnabled {
-        try await withRemotePairingRetry {
-            if case .failure(let error) = await isMinimuxerReady() {
+    guard !CellularRefreshManager.shared.isEnabled else { return }
+
+    // Wait (instead of a single probe) so device operations started while the
+    // tunnel/EMProxy is still coming up — or while a dropped VPN is reconnecting —
+    // succeed once the device becomes reachable instead of failing instantly.
+    try await withRemotePairingRetry {
+        let deadline = Date().addingTimeInterval(timeout)
+        var attempt = 0
+        var lastError: MinimuxerError?
+        repeat {
+            attempt += 1
+            switch await isMinimuxerReady() {
+            case .success:
+                if attempt > 1 {
+                    debugLog("[SideStore] ensureMinimuxerReady: minimuxer became ready after \(attempt - 1) wait cycle(s)")
+                }
+                return
+            case .failure(let error):
+                lastError = error
+                debugLog("[SideStore] ensureMinimuxerReady: not ready yet (attempt \(attempt)): \(error)")
                 if await recoverUnreadyMinimuxer(error), case .success = await isMinimuxerReady() {
+                    debugLog("[SideStore] ensureMinimuxerReady: recovered after rescanning interfaces")
                     return
                 }
-                if case .failure(let latest) = await isMinimuxerReady() {
-                    throw latest.asOperationError
+                if Date() < deadline {
+                    try await Task.sleep(nanoseconds: 1_500_000_000)
                 }
-                throw error.asOperationError
             }
+        } while Date() < deadline
+
+        if let latest = lastError {
+            throw latest.asOperationError
         }
+        throw OperationError.noDevice(reason: "minimuxer did not become ready within \(Int(timeout))s")
     }
 }
 
